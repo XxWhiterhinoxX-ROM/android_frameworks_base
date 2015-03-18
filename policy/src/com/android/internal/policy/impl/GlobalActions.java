@@ -128,7 +128,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private boolean mHasVibrator;
     private final boolean mShowSilentToggle;
     private Profile mChosenProfile;
-    private final boolean mShowScreenRecord;
+    private boolean showReboot;
 
     // Power menu customizations
     String mActions;
@@ -172,10 +172,6 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 com.android.internal.R.bool.config_useFixedVolume);
 
         updatePowerMenuActions();
-
-        mShowScreenRecord = mContext.getResources().getBoolean(
-                com.android.internal.R.bool.config_enableScreenrecordChord);
-
     }
 
     /**
@@ -183,6 +179,11 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
      * @param keyguardShowing True if keyguard is showing
      */
     public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned) {
+        showDialog(keyguardShowing, isDeviceProvisioned, false);
+    }
+
+    public void showDialog(boolean keyguardShowing, boolean isDeviceProvisioned, boolean mShowReboot) {
+        showReboot = mShowReboot;
         mKeyguardShowing = keyguardShowing;
         mDeviceProvisioned = isDeviceProvisioned;
         if (mDialog != null && mUiContext == null) {
@@ -299,36 +300,6 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             actionsArray = mActions.split("\\|");
         }
 
-        // next: screen record, if enabled
-        if (mShowScreenRecord) {
-            if (Settings.System.getInt(mContext.getContentResolver(),
-                    Settings.System.POWER_MENU_SCREENRECORD_ENABLED, 0) != 0) {
-                mItems.add(
-                    new SinglePressAction(com.android.internal.R.drawable.ic_lock_screen_record,
-                            R.string.global_action_screen_record) {
-
-                        public void onPress() {
-                            toggleScreenRecord();
-                        }
-
-                        public boolean onLongPress() {
-                            return false;
-                        }
-
-                        public boolean showDuringKeyguard() {
-                            return true;
-                        }
-
-                        public boolean showBeforeProvisioning() {
-                            return true;
-                        }
-                    });
-            }
-        }
-
-        String[] defaultActions = mContext.getResources().getStringArray(
-                com.android.internal.R.array.config_globalActionsList);
-
         // Always add the power off option
         mItems.add(new PowerAction());
 
@@ -345,6 +316,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 mItems.add(new RebootAction());
             } else if (GLOBAL_ACTION_KEY_SCREENSHOT.equals(actionKey)) {
                 mItems.add(getScreenshotAction());
+            } else if (GLOBAL_ACTION_KEY_SCREENRECORDER.equals(actionKey)) {
+                mItems.add(getScreenRecorderAction());
             } else if (GLOBAL_ACTION_KEY_AIRPLANE.equals(actionKey)) {
                 mItems.add(mAirplaneModeOn);
             } else if (GLOBAL_ACTION_KEY_BUGREPORT.equals(actionKey)) {
@@ -427,6 +400,29 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         dialog.setOnDismissListener(this);
 
         return dialog;
+    }
+
+    private Action getScreenRecorderAction() {
+        return new SinglePressAction(com.android.internal.R.drawable.ic_lock_screen_record,
+                R.string.global_action_screen_record) {
+
+            public void onPress() {
+                toggleScreenRecord();
+            }
+
+            public boolean onLongPress() {
+                //TODO: add a screen recorder settings shortcut on long press
+                return false;
+            }
+
+            public boolean showDuringKeyguard() {
+                return true;
+            }
+
+            public boolean showBeforeProvisioning() {
+                return true;
+            }
+        };
     }
 
     private void createProfileDialog() {
@@ -823,11 +819,11 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 mHandler.postDelayed(mScreenshotTimeout, 10000);
             }
         }
+    }
 
     private void toggleScreenRecord() {
         final Intent recordIntent = new Intent("org.chameleonos.action.NOTIFY_RECORD_SERVICE");
         mContext.sendBroadcast(recordIntent, Manifest.permission.RECORD_SCREEN);
-
     }
 
     private void prepareDialog() {
