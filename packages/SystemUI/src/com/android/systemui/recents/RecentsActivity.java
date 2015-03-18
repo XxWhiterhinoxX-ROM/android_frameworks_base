@@ -50,6 +50,7 @@ import com.android.systemui.recents.views.DebugOverlayView;
 import com.android.systemui.recents.views.RecentsView;
 import com.android.systemui.recents.views.SystemBarScrimViews;
 import com.android.systemui.recents.views.ViewAnimation;
+import android.provider.Settings;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
